@@ -1,8 +1,56 @@
 **Note:** For the screenshots, you can store all of your answer images in the `answer-img` directory.
+# cn-metrics-dashboard
+Using Prometheus, Jaeger, and Grafana to monitor, trace and visualize the application that is deployed on a Kubernetes cluster.
+## Prerequisites
+I use Macbook M2, so I can't install VirtualBox to install k3s. I use playground [KodeKloud](https://kodekloud.com/playgrounds/)
 
 ## Verify the monitoring installation
 
 *TODO:* run `kubectl` command to show the running pods and services for all components. Take a screenshot of the output and include it here to verify the installation
+
+Bring up Helm. Install Prometheus and Jaeger.
+```
+$ curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+
+$ kubectl create namespace monitoring
+$ helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+$ helm repo add stable https://charts.helm.sh/stable
+$ helm repo update
+$ helm install prometheus prometheus-community/kube-prometheus-stack --namespace monitoring --kubeconfig /etc/rancher/k3s/k3s.yaml
+
+$ kubectl --namespace monitoring get pods -l "release=prometheus"
+
+
+$ kubectl create namespace observability
+$ export jaeger_version=v1.28.0
+
+$ kubectl create -n observability -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/crds/jaegertracing.io_jaegers_crd.yaml
+$ kubectl create -n observability -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/service_account.yaml
+$ kubectl create -n observability -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/role.yaml
+$ kubectl create -n observability -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/role_binding.yaml
+$ kubectl create -n observability -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/operator.yaml
+
+$ kubectl create -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/cluster_role.yaml
+$ kubectl create -f https://raw.githubusercontent.com/jaegertracing/jaeger-operator/${jaeger_version}/deploy/cluster_role_binding.yaml
+
+$ kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/controller-v1.0.3/deploy/static/provider/cloud/deploy.yaml
+
+$ kubectl get svc -n observability
+$ kubectl get deploy
+```
+Open another terminal (T2). Securely copy the K8s manifest config files to the VM. Deploy the service.
+```
+$ cd projects/manifests/app
+kubectl apply -f ../app
+```
+Once it's done, check all the deployments, services are running.
+```
+$ kubectl get deploy -n monitoring
+$ kubectl get deploy -n observability
+$ kubectl get svc -n observability
+$ kubectl get deploy
+```
+
 
 ## Setup the Jaeger and Prometheus source
 *TODO:* Expose Grafana to the internet and then setup Prometheus as a data source. Provide a screenshot of the home page after logging into Grafana.
